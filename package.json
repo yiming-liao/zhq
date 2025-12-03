@@ -1,0 +1,73 @@
+{
+  "name": "zhq",
+  "version": "0.1.1",
+  "description": "...",
+  "author": "Yiming Liao",
+  "license": "MIT",
+  "homepage": "https://github.com/yiming-liao/zhq#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yiming-liao/zhq"
+  },
+  "bugs": {
+    "url": "https://github.com/yiming-liao/zhq/issues"
+  },
+  "keywords": [],
+  "type": "module",
+  "files": [
+    "dist",
+    "jieba_rs_wasm_bg.wasm",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "type": "tsc --noEmit",
+    "lint": "eslint",
+    "lint:debug": "eslint --debug",
+    "test": "vitest",
+    "knip": "knip --config .config/knip.config.ts",
+    "build": "yarn tsup",
+    "prepublishOnly": "yarn build",
+    "examples:html": "vite --config examples/html/vite.config.ts",
+    "examples:react": "vite --config examples/react/vite.config.ts"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/coverage-v8": "4.0.14",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-unicorn": "^62.0.0",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "knip": "^5.71.0",
+    "prettier": "^3.7.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.48.1",
+    "vite": "^7.2.6",
+    "vitest": "^4.0.14"
+  }
+}
