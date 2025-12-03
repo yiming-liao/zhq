@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <title>zhq 範例</title>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <form id="chatForm">
+      <h1>zhq 範例 Chatbot</h1>
+
+      <p id="status">系統初始化中...</p>
+
+      <div>
+        <input id="question" />
+        <button type="submit">送出</button>
+      </div>
+    </form>
+
+    <div id="chat">請輸入問題 (例如：營業時間、門市、會員)</div>
+
+    <script type="module">
+      import { createZhq } from "../../dist";
+
+      const docItems = [
+        {
+          key: "便利商店營業時間？",
+          content:
+            "大多數便利商店每日 07:00 - 23:00 營業，部分門市可能略有差異。",
+        },
+        {
+          key: "如何加入便利商店會員？",
+          content:
+            "您可以下載便利商店官方 App，註冊會員並綁定會員卡即可成為會員。",
+        },
+        {
+          key: "便利商店提供外送服務嗎？",
+          content: "部分門市提供外送服務，請以 App 查詢附近門市為準。",
+        },
+        {
+          key: "便利商店可以訂位嗎？",
+          content: "便利商店門市一般不提供訂位服務，部分特殊門市或活動例外。",
+        },
+        {
+          key: "如何查詢便利商店門市地址？",
+          content:
+            "您可以在便利商店官方網站或 App 的『門市查詢』功能查詢附近門市地址與營業資訊。",
+        },
+      ];
+
+      // 初始化 zhq
+      const zhq = await createZhq(docItems);
+
+      const status = document.getElementById("status");
+      status.textContent = "初始化完成";
+
+      const chatBox = document.getElementById("chat");
+      const form = document.getElementById("chatForm");
+      const question = document.getElementById("question");
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = question.value.trim();
+        if (!input) return;
+
+        const { bestMatch, candidates } = zhq.query(input, {
+          topKCandidates: 2,
+          // threshold: 0.6,
+        });
+
+        chatBox.innerHTML += `<p>你: ${input}</p>`;
+
+        if (bestMatch) {
+          chatBox.innerHTML += `<p>Bot: ${bestMatch.content}</p>`;
+        } else if (candidates) {
+          chatBox.innerHTML += `<p>Bot 建議問題: ${candidates.map((c) => c.key).join(" / ")}</p>`;
+        }
+
+        question.value = "";
+      });
+    </script>
+  </body>
+</html>

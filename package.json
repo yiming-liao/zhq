@@ -1,7 +1,7 @@
 {
   "name": "zhq",
   "version": "0.1.1",
-  "description": "...",
+  "description": "zhq 是一個基於 TF-IDF 與 Jieba 斷詞 的中文搜尋 JS 套件，完全運行於前端環境，適用於 問答、搜尋、推薦、文本比對。",
   "author": "Yiming Liao",
   "license": "MIT",
   "homepage": "https://github.com/yiming-liao/zhq#readme",
@@ -12,7 +12,17 @@
   "bugs": {
     "url": "https://github.com/yiming-liao/zhq/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "zhq",
+    "chinese",
+    "tf-idf",
+    "jieba",
+    "text-similarity",
+    "faq",
+    "search",
+    "nlp",
+    "chinese-text"
+  ],
   "type": "module",
   "files": [
     "dist",
