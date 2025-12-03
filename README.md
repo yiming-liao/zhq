@@ -2,8 +2,8 @@
 
 <div align="center">
 
-基於 **TF-IDF** 與 **Jieba 斷詞** 的中文搜尋 JS 套件，  
-完全運行於前端環境，適用於 問答、搜尋、推薦、文本比對。
+基於 **TF-IDF** 與 **Jieba 斷詞** 的中文檢索引擎，  
+完全運行於客戶端，適用於 問答、搜尋、推薦、文本比對。
 
 </div>
 
@@ -16,7 +16,7 @@
 
 </div>
 
-> 瀏覽器搞定一切，伺服器可以安心休息。
+> 瀏覽器搞定一切，放過你的伺服器。
 
 ## 安裝
 
@@ -56,11 +56,11 @@ public/jieba_rs_wasm_bg.wasm
 const docItems: DocItem[] = [
   {
     key: "ZHQ是什麼？",
-    content: "一款基於TF-IDF與Jieba斷詞的中文搜尋JS套件。",
+    content: "ZHQ是一款基於TF-IDF與Jieba斷詞的中文檢索引擎",
   },
   {
     key: "ZHQ的功能？",
-    content: "ZHQ適用於問答、搜尋、推薦、文本比對",
+    content: "ZHQ適用於 問答、搜尋、推薦、文本比對。",
   },
 ];
 ```
@@ -86,7 +86,7 @@ const zhq = await createZhq(docItems, {
 const zhq = await createZhq();
 ```
 
-#### 3. 使用 ZHQ
+#### 3. 使用 ZHQ 的 Methods
 
 呼叫 `zhq.query()`，將 `input` 與文檔索引比對，找出最相似的文檔。
 
@@ -96,8 +96,8 @@ const { bestMatch, candidates } = zhq.query(input);
 
 // 自訂選項
 const { bestMatch, candidates } = zhq.query(input, {
-  topKCandidates: 2,
-  threshold: 0.6,
+  topKCandidates: 2, // 指定回傳最接近的 candidates 數量，預設為 3
+  threshold: 0.6, // 相似度閾值 (0~1)，預設為 0.3
 });
 ```
 
