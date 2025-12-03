@@ -100,3 +100,10 @@ const { bestMatch, candidates } = zhq.query(input, {
   threshold: 0.6,
 });
 ```
+
+---
+
+## 第三方引用
+
+- 本專案中直接引用了 [jieba-wasm](https://github.com/fengkx/jieba-wasm) 相關檔案
+- 結巴相關連結： [jieba](https://github.com/fxsjy/jieba), [jieba-rs](https://github.com/messense/jieba-rs)
