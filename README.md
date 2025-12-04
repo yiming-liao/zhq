@@ -18,13 +18,13 @@
 
 > 瀏覽器搞定一切，放過你的伺服器。
 
-## 功能預覽
+## 範例展示
 
-#### [🔗‍️ 線上 DEMO：互動式問答 Chatbot ↗](https://zhq-js.github.io/)
+#### [👉 線上 Demo：互動式問答 Chatbot ↗](https://zhq-js.github.io/)
 
-- [極簡 HTML 範例 📂](https://github.com/yiming-liao/zhq/tree/main/examples/html) (npm run examples:html)
+- [📂 極簡 HTML 範例](https://github.com/yiming-liao/zhq/tree/main/examples/html) ( npm run examples:html )
 
-- [極簡 React 範例 📂](https://github.com/yiming-liao/zhq/tree/main/examples/react) (npm run examples:react)
+- [📂 極簡 React 範例](https://github.com/yiming-liao/zhq/tree/main/examples/react) ( npm run examples:react )
 
 ## 安裝
 
@@ -45,7 +45,7 @@ pnpm add zhq
 node_modules/zhq/jieba_rs_wasm_bg.wasm
 ```
 
-並將其放到可由瀏覽器存取的公開資料夾，例如：
+並將它放到可以被瀏覽器讀取的公開資料夾，例如：
 
 - Vite 的 public 資料夾
 - Next.js 的 public 資料夾
@@ -75,9 +75,9 @@ const docItems: DocItem[] = [
 
 #### 2. 初始化 ZHQ
 
-使用 `createZhq()` 來建立一個 ZHQ 實例
+使用 `createZhq()` 來建立 ZHQ 實例
 
-- 如果在此函數傳入 `docItems` ，ZHQ 會自動載入 **WASM** 以及建立 **TF-IDF 索引**。
+- 如果在此函數傳入 `docItems`，ZHQ 會自動載入 **WASM** 以及建立 **TF-IDF 索引**。
 - 反之，則需要後續手動呼叫 `initJieba()` 和 `buildIndex()`，適合延遲載入的場景。
 
 ```ts

@@ -14,6 +14,7 @@ export default function App() {
     if (!input || !ready) return;
 
     const { bestMatch, candidates } = query(input);
+
     if (bestMatch)
       setMessages((prev) => [
         ...prev,
@@ -25,6 +26,7 @@ export default function App() {
         ...prev,
         `Bot 建議問題: ${candidates.map((c) => c.key).join(" / ")}`,
       ]);
+
     setInput("");
   };
 
@@ -32,9 +34,7 @@ export default function App() {
     <>
       <form onSubmit={handleSubmit}>
         <h1>zhq 範例 Chatbot</h1>
-
         <p>{ready ? "初始化完成" : "系統初始化中..."}</p>
-
         <div>
           <input value={input} onChange={(e) => setInput(e.target.value)} />
           <button>送出</button>

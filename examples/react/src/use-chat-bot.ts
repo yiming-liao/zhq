@@ -2,6 +2,7 @@ import type { ZHQ, DocItem, QueryResult } from "zhq";
 import { useState, useEffect, useRef } from "react";
 import { createZhq } from "zhq";
 
+// --- 自訂文檔
 const DOC_ITEMS: DocItem[] = [
   {
     key: "便利商店營業時間？",
@@ -30,7 +31,7 @@ export function useChatbot(docItems = DOC_ITEMS) {
   const zhqRef = useRef<ZHQ>(null);
   const [ready, setReady] = useState(false);
 
-  // Init
+  // --- 初始化 zhq
   useEffect(() => {
     (async () => {
       zhqRef.current = await createZhq(docItems);
@@ -40,9 +41,14 @@ export function useChatbot(docItems = DOC_ITEMS) {
     })();
   }, [docItems]);
 
+  // --- 使用 zhq.query()，找出跟 input 最相似的文檔。
   function query(input: string): QueryResult {
     if (!zhqRef.current) return { candidates: [] };
-    return zhqRef.current.query(input);
+
+    return zhqRef.current.query(input, {
+      topKCandidates: 2, // 顯示幾個建議問題
+      threshold: 0.5, // 觸發 bestMatch 的相似程度 (0~1)
+    });
   }
 
   return { ready, query };
