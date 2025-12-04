@@ -18,6 +18,14 @@
 
 > 瀏覽器搞定一切，放過你的伺服器。
 
+## 功能預覽
+
+#### [🔗‍️ 互動式 Chatbot 示範 ↗](https://zhq-js.github.io/)
+
+- [極簡 HTML 範例 📂](https://github.com/yiming-liao/zhq/tree/main/examples/html) (npm run examples:html)
+
+- [極簡 React 使用範例 📂](https://github.com/yiming-liao/zhq/tree/main/examples/react) (npm run examples:react)
+
 ## 安裝
 
 ```bash
@@ -56,7 +64,7 @@ public/jieba_rs_wasm_bg.wasm
 const docItems: DocItem[] = [
   {
     key: "ZHQ是什麼？",
-    content: "ZHQ是一款基於TF-IDF與Jieba斷詞的中文檢索引擎",
+    content: "ZHQ是一個基於TF-IDF與Jieba斷詞的中文檢索引擎",
   },
   {
     key: "ZHQ的功能？",
