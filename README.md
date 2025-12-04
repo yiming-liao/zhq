@@ -20,11 +20,11 @@
 
 ## 功能預覽
 
-#### [🔗‍️ 互動式 Chatbot 示範 ↗](https://zhq-js.github.io/)
+#### [🔗‍️ 線上 DEMO：互動式問答 Chatbot ↗](https://zhq-js.github.io/)
 
 - [極簡 HTML 範例 📂](https://github.com/yiming-liao/zhq/tree/main/examples/html) (npm run examples:html)
 
-- [極簡 React 使用範例 📂](https://github.com/yiming-liao/zhq/tree/main/examples/react) (npm run examples:react)
+- [極簡 React 範例 📂](https://github.com/yiming-liao/zhq/tree/main/examples/react) (npm run examples:react)
 
 ## 安裝
 
