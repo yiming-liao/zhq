@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tfidf } from "../../src/utils/tf-idf";
+import { tfidf } from "@/utils/tf-idf";
 
 describe("tfidf", () => {
   it("應該正確計算 TF-IDF 值", () => {

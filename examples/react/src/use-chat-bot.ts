@@ -1,6 +1,7 @@
-import type { ZHQ, DocItem, QueryResult } from "zhq";
-import { useState, useEffect, useRef } from "react";
+import type { ZHQ } from "zhq";
+import { useEffect, useRef } from "react";
 import { createZhq } from "zhq";
+import { type DocItem, type QueryResult } from "zhq";
 
 // --- 自訂文檔
 const DOC_ITEMS: DocItem[] = [
@@ -29,27 +30,24 @@ const DOC_ITEMS: DocItem[] = [
 
 export function useChatbot(docItems = DOC_ITEMS) {
   const zhqRef = useRef<ZHQ>(null);
-  const [ready, setReady] = useState(false);
 
-  // --- 初始化 zhq
+  // --- 初始化 ZHQ（Lazy Load）
   useEffect(() => {
     (async () => {
-      zhqRef.current = await createZhq(docItems);
-      setReady(
-        zhqRef.current.isJiebaInitialized && zhqRef.current.isIndexBuilt,
-      );
+      zhqRef.current = await createZhq();
+      await zhqRef.current.initJieba(); // 初始化 Jieba
+      zhqRef.current.buildIndexAsync(docItems as DocItem[]); // 使用 buildIndexAsync，且不 Await，讓他背景執行
     })();
-  }, [docItems]);
+  }, []);
 
-  // --- 使用 zhq.query()，找出跟 input 最相似的文檔。
-  function query(input: string): QueryResult {
-    if (!zhqRef.current) return { candidates: [] };
-
-    return zhqRef.current.query(input, {
+  // --- 查詢（使用 queryAsync，自動等待索引完成）
+  function query(input: string): Promise<QueryResult> | undefined {
+    if (!zhqRef.current) return;
+    return zhqRef.current.queryAsync(input, {
       topKCandidates: 2, // 顯示幾個建議問題
       threshold: 0.5, // 觸發 bestMatch 的相似程度 (0~1)
     });
   }
 
-  return { ready, query };
+  return { query };
 }

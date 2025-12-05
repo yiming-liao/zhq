@@ -1,11 +1,11 @@
-export { ZHQ } from "../src/zhq";
-export { createZhq } from "../src/create-zhq";
+export { ZHQ } from "@/zhq";
+export { createZhq } from "@/create-zhq";
 
 export type {
   DocItem,
   DocumentFrequency,
   DocItemsTokens,
   DocItemsVectors,
-} from "../src/types";
+} from "@/types";
 
-export type { QueryResult } from "../src/methods/query";
+export type { QueryResult } from "@/core/query";

@@ -4,18 +4,19 @@ import type {
   DocItemsTokens,
   DocItemsVectors,
   DocumentFrequency,
-} from "../types";
-import { cosineSimilarity } from "../utils/cosine-similarity";
-import { tfidf } from "../utils/tf-idf";
-import { tokenize } from "./jieba";
+} from "@/types";
+import { tokenize } from "@/core/jieba";
+import { cosineSimilarity } from "@/utils/cosine-similarity";
+import { tfidf } from "@/utils/tf-idf";
 
 /**
  * 查詢結果類型
  * @template T - 每個 DocItem 的 metadata
  */
 export type QueryResult<T = unknown> = {
+  isIndexReady: boolean;
   /** 最匹配的文件，如果沒有超過 threshold，則為 undefined */
-  bestMatch?: DocItem<T>;
+  bestMatch: DocItem<T> | undefined;
   /** 其他建議的候選文件（可能為空陣列） */
   candidates: ReadonlyArray<DocItem<T>>;
 };
@@ -37,7 +38,7 @@ export type QueryResult<T = unknown> = {
  * - `bestMatch`：最匹配的文檔（可能為 undefined）
  * - `candidates`：其他建議的候選文件，長度最多為 topKCandidates
  */
-export function query<T = unknown>({
+export function query<T>({
   docItems,
   documentFrequency,
   docItemsTokens,
@@ -49,7 +50,7 @@ export function query<T = unknown>({
   docItems: ReadonlyArray<DocItem<T>>;
   documentFrequency: DocumentFrequency;
   docItemsTokens: DocItemsTokens;
-  docItemsVectors?: DocItemsVectors;
+  docItemsVectors: DocItemsVectors;
   input: string;
   topKCandidates?: number;
   threshold?: number;
@@ -62,23 +63,15 @@ export function query<T = unknown>({
   const inputVector = tfidf(inputTokens, docItems.length, documentFrequency); // 計算輸入文字的 TF-IDF 向量
 
   // 計算每個 docItem 與輸入文字的相似度
-  const scoredItems = docItemsTokens.map((tokens, index) => {
-    const thisVector =
-      docItemsVectors?.[index] ??
-      tfidf(tokens, docItems.length, documentFrequency);
-    const score = cosineSimilarity(inputVector, thisVector);
+  const scoredItems = docItemsTokens.map((_, index) => {
+    const score = cosineSimilarity(inputVector, docItemsVectors[index]);
     return { index, score };
   });
 
   const sorted = [...scoredItems].sort((a, b) => b.score - a.score); // 依分數由高到低排序
-
-  if (sorted.length === 0) {
-    return { bestMatch: undefined, candidates: [] };
-  }
-
   const bestScore = sorted[0].score;
 
-  // Util
+  // Util: get valid candidates
   const getCandidates = (start: number) =>
     sorted
       .slice(start, start + topKCandidates)
@@ -88,10 +81,18 @@ export function query<T = unknown>({
   if (bestScore > threshold) {
     // 超過閾值，第一筆為 bestMatch，其餘 topK 作為 candidates
     const candidates = getCandidates(1);
-    return { bestMatch: docItems[sorted[0].index], candidates };
+    return {
+      isIndexReady: true,
+      bestMatch: docItems[sorted[0].index],
+      candidates,
+    };
   } else {
     // 未超過閾值，bestMatch 為 undefined，回傳前 topK candidates
     const candidates = getCandidates(0);
-    return { bestMatch: undefined, candidates };
+    return {
+      isIndexReady: true,
+      bestMatch: undefined,
+      candidates,
+    };
   }
 }

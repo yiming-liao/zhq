@@ -1,49 +1,57 @@
-import type { DocItem } from "../export";
-import { describe, it, expect, vi } from "vitest";
-import { createZhq } from "../src/create-zhq";
-import { ZHQ } from "../src/zhq";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable unicorn/no-useless-undefined */
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createZhq } from "@/create-zhq";
+import { ZHQ } from "@/zhq";
 
-vi.mock("../src/methods/jieba", async (importOriginal) => {
-  const actual = await importOriginal();
+const mockDocItems = [
+  { key: "A", content: "天氣很好" },
+  { key: "B", content: "散步很舒服" },
+];
+
+// ---- Mock modules ----
+vi.mock("@/core/jieba", () => ({
+  initJieba: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/core/build-index", () => ({
+  buildIndex: vi.fn().mockReturnValue({
+    documentFrequency: {},
+    docItemsTokens: [],
+    docItemsVectors: [],
+  }),
+}));
+
+vi.mock("@/zhq", () => {
   return {
-    // @ts-expect-error any
-    ...actual,
-    initJieba: vi.fn(async () => true), // mock initJieba
-    tokenize: (text: string) => text.split(" "), // mock tokenize
+    ZHQ: vi.fn().mockImplementation(function (this: any) {
+      this.initJieba = vi.fn().mockResolvedValue(undefined);
+      this.buildIndex = vi.fn();
+    }),
   };
 });
 
-// 假資料
-const docs: DocItem[] = [
-  { key: "便利商店 咖啡", content: "答案1" },
-  { key: "便利商店 茶飲", content: "答案2" },
-];
-
 describe("createZhq", () => {
-  it("不傳 docItems，應返回未初始化 ZHQ 實例", async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return a ZHQ instance even without docItems", async () => {
     const zhq = await createZhq();
     expect(zhq).toBeInstanceOf(ZHQ);
-    expect(zhq.docItems).toBeUndefined();
-    expect(zhq.isJiebaInitialized).toBe(false);
+    expect(zhq.initJieba).not.toHaveBeenCalled();
+    expect(zhq.buildIndex).not.toHaveBeenCalled();
   });
 
-  it("傳入 docItems，應初始化 Jieba 並建立索引", async () => {
-    const zhq = await createZhq(docs);
-    expect(zhq.docItems).toEqual(docs);
-    expect(zhq.isJiebaInitialized).toBe(true);
-    // 可以查 query 是否可用
-    const result = zhq.query("便利商店");
-    expect(result.candidates.length).toBeGreaterThan(0);
+  it("should initialize jieba and build index if docItems are provided", async () => {
+    const zhq = await createZhq(mockDocItems);
+    expect(zhq.initJieba).toHaveBeenCalledWith("/jieba_rs_wasm_bg.wasm");
+    expect(zhq.buildIndex).toHaveBeenCalled();
+    expect(zhq.buildIndex).toHaveBeenCalledWith(mockDocItems);
   });
 
-  it("precomputeVectors 為 true，應有 docItemsVectors", async () => {
-    const zhq = await createZhq(docs, { precomputeVectors: true });
-    expect(zhq["docItemsVectors"]).toBeDefined();
-    expect(zhq["docItemsVectors"]?.length).toBe(docs.length);
-  });
-
-  it("precomputeVectors 為 false，docItemsVectors 應 undefined", async () => {
-    const zhq = await createZhq(docs, { precomputeVectors: false });
-    expect(zhq["docItemsVectors"]).toBeUndefined();
+  it("should pass custom wasmPath to initJieba", async () => {
+    const zhq = await createZhq(mockDocItems, { wasmPath: "/custom.wasm" });
+    expect(zhq.initJieba).toHaveBeenCalledWith("/custom.wasm");
   });
 });

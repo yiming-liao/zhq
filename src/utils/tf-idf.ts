@@ -1,4 +1,4 @@
-import type { DocumentFrequency } from "../types";
+import type { DocumentFrequency } from "@/types";
 
 /**
  * 計算 TF-IDF 向量

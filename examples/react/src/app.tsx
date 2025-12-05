@@ -7,13 +7,15 @@ export default function App() {
     "請輸入問題 (例如：營業時間、門市、會員)",
   ]);
 
-  const { ready, query } = useChatbot();
+  const { query } = useChatbot();
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!input || !ready) return;
+    if (!input) return;
 
-    const { bestMatch, candidates } = query(input);
+    const response = await query(input);
+    if (!response) return;
+    const { bestMatch, candidates } = response;
 
     if (bestMatch)
       setMessages((prev) => [
@@ -34,7 +36,6 @@ export default function App() {
     <>
       <form onSubmit={handleSubmit}>
         <h1>zhq 範例 Chatbot</h1>
-        <p>{ready ? "初始化完成" : "系統初始化中..."}</p>
         <div>
           <input value={input} onChange={(e) => setInput(e.target.value)} />
           <button>送出</button>

@@ -3,72 +3,108 @@ import type {
   DocItemsTokens,
   DocItemsVectors,
   DocumentFrequency,
-} from "./types";
-import { buildIndex } from "./methods/build-index";
-import { initJieba } from "./methods/jieba";
-import { query } from "./methods/query";
+} from "@/types";
+import { buildIndex } from "@/core/build-index";
+import { initJieba } from "@/core/jieba";
+import { query, type QueryResult } from "@/core/query";
 
 export class ZHQ<T = unknown> {
-  /** 是否已初始化 Jieba */
-  private _isJiebaInitialized: boolean = false;
-  /** 是否已建立索引 */
-  private _isIndexBuilt = false;
-  /** 文檔列表 */
-  private _docItems: ReadonlyArray<DocItem<T>> | undefined;
-  /** 文檔頻率 (DF) */
-  private documentFrequency: DocumentFrequency | undefined;
-  /** 每個文檔的斷詞結果 */
-  private docItemsTokens: DocItemsTokens | undefined;
-  /** 每個文檔的 TF-IDF 向量 (可選預先計算) */
-  private docItemsVectors: DocItemsVectors | undefined;
+  // Internal state
+  private _jiebaReady = false;
+  private _indexReady = false;
+  private _indexPromise: Promise<void> | null = null;
+  // DocItem related
+  private _docItems?: ReadonlyArray<DocItem<T>>;
+  private documentFrequency?: DocumentFrequency;
+  private docItemsTokens?: DocItemsTokens;
+  private docItemsVectors?: DocItemsVectors;
+  // Events
+  onJiebaReady?: () => void;
+  onIndexReady?: () => void;
+  onError?: (err: unknown) => void;
 
   constructor(docItems?: ReadonlyArray<DocItem<T>>) {
     if (docItems) this._docItems = docItems;
   }
 
-  get isJiebaInitialized() {
-    return this._isJiebaInitialized;
-  }
-
-  get isIndexBuilt() {
-    return this._isIndexBuilt;
-  }
-
+  // Getters
   get docItems() {
     return this._docItems;
   }
 
   /** 初始化 Jieba */
   async initJieba(wasmPath = "/jieba_rs_wasm_bg.wasm") {
-    if (!this._isJiebaInitialized) {
+    if (this._jiebaReady) return;
+    try {
       await initJieba(wasmPath);
-      this._isJiebaInitialized = true;
+      this._jiebaReady = true;
+      this.onJiebaReady?.();
+    } catch (error) {
+      this.onError?.(error);
+      throw error;
     }
   }
 
-  /** 建立 TF-IDF 索引 */
-  buildIndex(docItems = this._docItems, precomputeVectors = false) {
-    if (!docItems) throw new Error("請提供 docItems 或在 constructor 傳入");
-    if (docItems.length === 0)
-      throw new Error("buildIndex() 需要有效 docItems。");
-    const { documentFrequency, docItemsTokens, docItemsVectors } = buildIndex(
-      docItems,
-      precomputeVectors,
-    );
+  /** 存入索引結果 */
+  private applyIndexResult(
+    docItems: ReadonlyArray<DocItem<T>>,
+    result: {
+      documentFrequency: DocumentFrequency;
+      docItemsTokens: DocItemsTokens;
+      docItemsVectors?: DocItemsVectors;
+    },
+  ) {
     this._docItems = docItems;
-    this.documentFrequency = documentFrequency;
-    this.docItemsTokens = docItemsTokens;
-    this.docItemsVectors = docItemsVectors;
-    this._isIndexBuilt = true;
+    this.documentFrequency = result.documentFrequency;
+    this.docItemsTokens = result.docItemsTokens;
+    this.docItemsVectors = result.docItemsVectors;
+    this._indexReady = true;
+    this.onIndexReady?.();
   }
 
-  /** 查詢與輸入文字最相似的文檔 */
+  /** 建立索引（同步） */
+  buildIndex(docItems = this._docItems) {
+    if (!docItems?.length) {
+      throw new Error("buildIndex() 需要有效 docItems");
+    }
+    try {
+      const result = buildIndex<T>(docItems);
+      this.applyIndexResult(docItems, result);
+    } catch (error) {
+      this.onError?.(error);
+      throw error;
+    }
+  }
+
+  /** 建立索引（非同步） */
+  buildIndexAsync(docItems = this._docItems): Promise<void> {
+    if (!docItems?.length) {
+      throw new Error("buildIndexAsync() 需要有效 docItems");
+    }
+    if (this._indexPromise) {
+      return this._indexPromise;
+    }
+    this._indexPromise = (async () => {
+      try {
+        const result = await buildIndex<T>(docItems);
+        this.applyIndexResult(docItems, result);
+      } catch (error) {
+        this.onError?.(error);
+        throw error;
+      } finally {
+        this._indexPromise = null;
+      }
+    })();
+    return this._indexPromise;
+  }
+
+  /** 查詢（同步，不等待索引） */
   query(
     input: string,
     options?: { topKCandidates?: number; threshold?: number },
-  ) {
-    if (!this.isIndexBuilt) {
-      throw new Error("索引尚未建立，請先呼叫 buildIndex()");
+  ): QueryResult<T> {
+    if (!this._indexReady || !this.docItemsVectors) {
+      return { isIndexReady: false, bestMatch: undefined, candidates: [] };
     }
     return query<T>({
       docItems: this._docItems!,
@@ -79,5 +115,16 @@ export class ZHQ<T = unknown> {
       topKCandidates: options?.topKCandidates,
       threshold: options?.threshold,
     });
+  }
+
+  /** 查詢（非同步，等待索引建立） */
+  async queryAsync(
+    input: string,
+    options?: { topKCandidates?: number; threshold?: number },
+  ): Promise<QueryResult<T>> {
+    if (this._indexPromise) {
+      await this._indexPromise;
+    }
+    return this.query(input, options);
   }
 }

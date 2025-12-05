@@ -1,4 +1,4 @@
-import init, { cut } from "../jieba-wasm/jieba_rs_wasm";
+import init, { cut } from "@/jieba-wasm/jieba_rs_wasm";
 
 /**
  * 初始化 Jieba WASM

@@ -1,118 +1,204 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable unicorn/no-useless-undefined */
-import type { DocItem } from "../export";
-import { describe, it, expect, vi } from "vitest";
-import { createZhq } from "../src/create-zhq";
-import * as jiebaModule from "../src/methods/jieba";
-import { ZHQ } from "../src/zhq";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import * as buildIndexCore from "@/core/build-index";
+import * as jiebaCore from "@/core/jieba";
+import * as queryCore from "@/core/query";
+import { ZHQ } from "@/zhq";
 
-// --- Mock Jieba 與相關方法 ---
-vi.mock("../src/methods/jieba", () => ({
-  tokenize: (text: string) => text.split(" "), // 簡單拆字
-  initJieba: vi.fn().mockResolvedValue(undefined), // mock 初始化
-}));
-
-vi.mock("../src/methods/build-index", () => ({
-  buildIndex: (docItems: any[], precomputeVectors = false) => ({
-    documentFrequency: { a: 1 }, // 假 DF
-    docItemsTokens: docItems.map((d) => d.key.split(" ")), // 假 tokens
-    docItemsVectors: precomputeVectors
-      ? docItems.map(() => [1, 2, 3])
-      : undefined, // 假向量
-  }),
-}));
-
-vi.mock("../src/methods/query", () => ({
-  query: ({ docItems }: any) => ({
-    bestMatch: docItems[0],
-    candidates: docItems.slice(1),
-  }),
-}));
-
-// --- 假資料 ---
-interface Metadata {
-  id: number;
-}
-const docs: DocItem<Metadata>[] = [
-  { key: "便利商店 咖啡", content: "答案1", metadata: { id: 1 } },
-  { key: "便利商店 茶飲", content: "答案2", metadata: { id: 2 } },
+const mockDocItems = [
+  { key: "A", content: "天氣很好" },
+  { key: "B", content: "適合散步" },
 ];
 
-describe("ZHQ & createZhq 完整測試", () => {
-  it("不傳 docItems，應返回未初始化 ZHQ 實例", async () => {
-    const zhq = await createZhq();
-    expect(zhq).toBeInstanceOf(ZHQ);
-    expect(zhq.docItems).toBeUndefined();
-    expect(zhq.isJiebaInitialized).toBe(false);
-  });
+// ---- Mock modules ----
+vi.mock("@/core/jieba", () => ({
+  initJieba: vi.fn().mockResolvedValue(undefined),
+}));
 
-  it("傳入 docItems，應初始化 Jieba 並建立索引", async () => {
-    const zhq = await createZhq(docs);
-    expect(zhq.docItems).toEqual(docs);
-    expect(zhq.isJiebaInitialized).toBe(true);
+vi.mock("@/core/build-index", () => ({
+  buildIndex: vi.fn().mockReturnValue({
+    documentFrequency: { 天: 1 },
+    docItemsTokens: [
+      ["天", "氣"],
+      ["適", "合"],
+    ],
+    docItemsVectors: [{ foo: 1 }, { bar: 1 }],
+  }),
+}));
 
-    const result = zhq.query("便利商店");
-    expect(result.candidates.length).toBeGreaterThan(0);
-    expect(result.bestMatch?.key).toBe(docs[0].key);
-  });
+vi.mock("@/core/query", () => ({
+  query: vi.fn().mockReturnValue({
+    isIndexReady: true,
+    bestMatch: { key: "A", content: "天氣很好" },
+    candidates: [{ key: "A", score: 0.8 }],
+  }),
+}));
 
-  it("precomputeVectors 為 true，應有 docItemsVectors", async () => {
-    const zhq = await createZhq(docs, { precomputeVectors: true });
-    expect(zhq["docItemsVectors"]).toBeDefined();
-    expect(zhq["docItemsVectors"]?.length).toBe(docs.length);
-  });
-
-  it("precomputeVectors 為 false，docItemsVectors 應 undefined", async () => {
-    const zhq = await createZhq(docs, { precomputeVectors: false });
-    expect(zhq["docItemsVectors"]).toBeUndefined();
-  });
-
-  it("ZHQ.initJieba 應呼叫 initJieba 並設定 isJiebaInitialized 為 true", async () => {
-    const zhq = new ZHQ();
-    expect(zhq.isJiebaInitialized).toBe(false);
-
-    await zhq.initJieba("/mock.wasm");
-
-    expect(jiebaModule.initJieba).toHaveBeenCalledWith("/mock.wasm");
-    expect(zhq.isJiebaInitialized).toBe(true);
-  });
-
-  it("initJieba 已初始化時不會重複呼叫 initJieba", async () => {
+describe("ZHQ (New Event-based Version)", () => {
+  beforeEach(() => {
     vi.clearAllMocks();
+  });
 
+  // --------------------------------------------------------
+  // Constructor
+  // --------------------------------------------------------
+  it("should initialize without docItems", () => {
     const zhq = new ZHQ();
-    const initJiebaMock = vi.spyOn(jiebaModule, "initJieba");
+    expect(zhq.docItems).toBeUndefined();
+  });
 
-    // 第一次呼叫，應該會執行 initJieba
+  it("should store docItems if provided", () => {
+    const zhq = new ZHQ(mockDocItems);
+    expect(zhq.docItems).toEqual(mockDocItems);
+  });
+
+  // --------------------------------------------------------
+  // initJieba()
+  // --------------------------------------------------------
+  it("should call initJieba and fire onJiebaReady", async () => {
+    const zhq = new ZHQ();
+    const onReady = vi.fn();
+    zhq.onJiebaReady = onReady;
+
     await zhq.initJieba();
-    expect(initJiebaMock).toHaveBeenCalledTimes(1);
 
-    // 第二次呼叫，_isJiebaInitialized 已經 true，不應再呼叫 initJieba
+    expect(jiebaCore.initJieba).toHaveBeenCalled();
+    expect(onReady).toHaveBeenCalledTimes(1);
+  });
+
+  it("should not reinitialize if already ready", async () => {
+    const zhq = new ZHQ();
+
     await zhq.initJieba();
-    expect(initJiebaMock).toHaveBeenCalledTimes(1);
+    await zhq.initJieba();
 
-    initJiebaMock.mockRestore();
+    expect(jiebaCore.initJieba).toHaveBeenCalledTimes(1);
   });
 
-  // --- 新增錯誤處理測試 ---
-  it("buildIndex 沒有 docItems 也未在 constructor 傳入，應拋錯", () => {
+  it("should fire onError when initJieba throws", async () => {
     const zhq = new ZHQ();
-    expect(() => zhq.buildIndex()).toThrow(
-      "請提供 docItems 或在 constructor 傳入",
-    );
+    const onError = vi.fn();
+    zhq.onError = onError;
+
+    vi.mocked(jiebaCore.initJieba).mockRejectedValueOnce(new Error("Fail"));
+
+    await expect(zhq.initJieba()).rejects.toThrow("Fail");
+    expect(onError).toHaveBeenCalled();
   });
 
-  it("buildIndex 傳入空陣列，應拋錯", () => {
+  // --------------------------------------------------------
+  // buildIndex()
+  // --------------------------------------------------------
+  it("should build index synchronously and fire onIndexReady", () => {
+    const zhq = new ZHQ(mockDocItems);
+    const onIndex = vi.fn();
+    zhq.onIndexReady = onIndex;
+
+    zhq.buildIndex();
+
+    expect(buildIndexCore.buildIndex).toHaveBeenCalledWith(mockDocItems);
+    expect(onIndex).toHaveBeenCalled();
+  });
+
+  it("should throw if buildIndex is called without docItems", () => {
     const zhq = new ZHQ();
-    expect(() => zhq.buildIndex([])).toThrow(
-      "buildIndex() 需要有效 docItems。",
+    expect(() => zhq.buildIndex()).toThrow("buildIndex() 需要有效 docItems");
+  });
+
+  it("should fire onError when buildIndex fails", () => {
+    const zhq = new ZHQ(mockDocItems);
+    const onError = vi.fn();
+    zhq.onError = onError;
+
+    vi.mocked(buildIndexCore.buildIndex).mockImplementationOnce(() => {
+      throw new Error("index fail");
+    });
+
+    expect(() => zhq.buildIndex()).toThrow("index fail");
+    expect(onError).toHaveBeenCalled();
+  });
+
+  // --------------------------------------------------------
+  // buildIndexAsync()
+  // --------------------------------------------------------
+  it("should build index asynchronously and fire onIndexReady", async () => {
+    const zhq = new ZHQ(mockDocItems);
+    const onIndex = vi.fn();
+    zhq.onIndexReady = onIndex;
+
+    await zhq.buildIndexAsync();
+
+    expect(buildIndexCore.buildIndex).toHaveBeenCalled();
+    expect(onIndex).toHaveBeenCalled();
+  });
+
+  it("should reuse the same promise when already building", () => {
+    const zhq = new ZHQ(mockDocItems);
+    const p1 = zhq.buildIndexAsync();
+    const p2 = zhq.buildIndexAsync();
+    expect(p1).toBe(p2);
+  });
+
+  it("should throw error when buildIndexAsync called without docItems", () => {
+    const zhq = new ZHQ();
+    expect(() => zhq.buildIndexAsync()).toThrow(
+      "buildIndexAsync() 需要有效 docItems",
     );
   });
 
-  it("query 在未建立索引前，應拋錯", () => {
-    const zhq = new ZHQ(docs);
-    expect(() => zhq.query("任何問題")).toThrow(
-      "索引尚未建立，請先呼叫 buildIndex()",
+  it("should trigger onError when async indexing fails", async () => {
+    const zhq = new ZHQ(mockDocItems);
+    const onError = vi.fn();
+    zhq.onError = onError;
+
+    vi.mocked(buildIndexCore.buildIndex).mockRejectedValueOnce(
+      new Error("async fail"),
     );
+
+    await expect(zhq.buildIndexAsync()).rejects.toThrow("async fail");
+    expect(onError).toHaveBeenCalled();
+  });
+
+  // --------------------------------------------------------
+  // query()
+  // --------------------------------------------------------
+  it("should return not-ready result when index not ready", () => {
+    const zhq = new ZHQ(mockDocItems);
+    const res = zhq.query("天氣");
+    expect(res.isIndexReady).toBe(false);
+    expect(res.candidates).toEqual([]);
+  });
+
+  it("should query successfully when index is ready", () => {
+    const zhq = new ZHQ(mockDocItems);
+    zhq.buildIndex();
+    const res = zhq.query("天氣");
+
+    expect(queryCore.query).toHaveBeenCalled();
+    expect(res.bestMatch?.key).toBe("A");
+  });
+
+  // --------------------------------------------------------
+  // queryAsync()
+  // --------------------------------------------------------
+  it("queryAsync should wait for async index to finish", async () => {
+    const zhq = new ZHQ(mockDocItems);
+    const p = zhq.buildIndexAsync();
+
+    const res = await zhq.queryAsync("天氣");
+    await p;
+
+    expect(res.isIndexReady).toBe(true);
+    expect(queryCore.query).toHaveBeenCalled();
+  });
+
+  it("queryAsync should directly query if no indexing in progress", async () => {
+    const zhq = new ZHQ(mockDocItems);
+    zhq.buildIndex();
+
+    const res = await zhq.queryAsync("天氣");
+
+    expect(queryCore.query).toHaveBeenCalled();
+    expect(res.isIndexReady).toBe(true);
   });
 });
