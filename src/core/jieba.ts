@@ -1,4 +1,4 @@
-import init, { cut } from "@/jieba-wasm/jieba_rs_wasm";
+import init, { cut_for_search } from "@/jieba-wasm/jieba_rs_wasm";
 
 /**
  * 初始化 Jieba WASM
@@ -13,10 +13,9 @@ export async function initJieba(
 /**
  * 對文字進行斷詞
  * @param text - 要斷詞的文字
- * @param cutAll - 是否使用全模式斷詞（預設 true）
  * @returns 斷詞後的字串陣列
  */
-export function tokenize(text?: string, cutAll = true): string[] {
+export function tokenize(text?: string): string[] {
   if (!text) return [];
-  return cut(text, cutAll);
+  return cut_for_search(text);
 }

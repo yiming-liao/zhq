@@ -22,9 +22,9 @@
 
 #### [👉 線上 Demo：互動式問答 Chatbot ↗](https://zhq-js.github.io/)
 
-- [📂 極簡 HTML 範例](https://github.com/yiming-liao/zhq/tree/main/examples/html) ( npm run examples:html )
+- [極簡 HTML 範例](https://github.com/yiming-liao/zhq/tree/main/examples/html) ( npm run examples:html )
 
-- [📂 極簡 React 範例](https://github.com/yiming-liao/zhq/tree/main/examples/react) ( npm run examples:react )
+- [極簡 React 範例](https://github.com/yiming-liao/zhq/tree/main/examples/react) ( npm run examples:react )
 
 ## 安裝
 
@@ -77,29 +77,32 @@ const docItems: DocItem[] = [
 
 使用 `createZhq()` 來建立 ZHQ 實例
 
-- 如果在此函數傳入 `docItems`，ZHQ 會自動載入 **WASM** 以及建立 **TF-IDF 索引**。
-- 反之，則需要後續手動呼叫 `initJieba()` 和 `buildIndex()`，適合延遲載入的場景。
+- 如果在此函數傳入 `docItems`，ZHQ 會**自動載入 WASM** 以及**建立索引**。
 
 ```ts
-// 基本使用
+// 基本用法
 const zhq = await createZhq(docItems);
 
 // 自訂選項
 const zhq = await createZhq(docItems, {
   wasmPath: "/path/to/jieba_rs_wasm_bg.wasm", // 預設為 "/jieba_rs_wasm_bg.wasm"
-  precomputeVectors: true, // 預設為 false
 });
+```
 
-// 延遲載入 (Lazy loading)
+- **Lazy Loading (可選):** 不傳入 `docItems`，並手動分階段載入：
+
+```ts
 const zhq = await createZhq();
+await zhq.initJieba(); // 載入 Jieba
+zhq.buildIndexAsync(docItems); // 背景建立索引（不阻塞主執行緒）
 ```
 
 #### 3. 使用 ZHQ 的 Methods
 
-呼叫 `zhq.query()`，將 `input` 與文檔索引比對，找出最相似的文檔。
+使用 `query()`，將 `input` 與文檔索引比對，找出最相似的文檔。
 
 ```ts
-// 基本使用
+// 基本用法
 const { bestMatch, candidates } = zhq.query(input);
 
 // 自訂選項
@@ -107,6 +110,13 @@ const { bestMatch, candidates } = zhq.query(input, {
   topKCandidates: 2, // 指定回傳最接近的 candidates 數量，預設為 3
   threshold: 0.6, // 相似度閾值 (0~1)，預設為 0.3
 });
+```
+
+- **Lazy Loading (可選):** 如果使用了 `buildIndexAsync`，索引可能仍在建立，請使用 `queryAsync()`：
+
+```ts
+// 非同步查詢，若索引未完成，會等待索引建立後再回傳結果
+const { bestMatch, candidates } = await zhq.queryAsync(input);
 ```
 
 ---
