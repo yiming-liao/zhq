@@ -57,13 +57,13 @@ public/jieba_rs_wasm_bg.wasm
 
 ## 使用方式
 
-#### 1. 準備文檔 DocItem[]
+#### 1. 準備文檔
 
 ```ts
 // 以 FAQ 問答形式為例：
 const docItems: DocItem[] = [
   {
-    key: "ZHQ是什麼？",
+    key: "ZHQ是什麼？", // key: 用來與使用者輸入做相似度比對
     content: "ZHQ是一個基於TF-IDF與Jieba斷詞的中文檢索引擎",
   },
   {
@@ -97,7 +97,7 @@ await zhq.initJieba(); // 載入 Jieba
 zhq.buildIndexAsync(docItems); // 背景建立索引（不阻塞主執行緒）
 ```
 
-#### 3. 使用 ZHQ 的 Methods
+#### 3. 查詢資料
 
 使用 `query()`，將 `input` 與文檔索引比對，找出最相似的文檔。
 
