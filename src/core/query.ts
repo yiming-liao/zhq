@@ -1,98 +1,84 @@
 /* eslint-disable unicorn/no-array-sort */
 import type {
-  DocItem,
-  DocItemsTokens,
-  DocItemsVectors,
-  DocumentFrequency,
+  Document,
+  QueryResult,
+  ScoredDocument,
+  SearchIndex,
 } from "@/types";
 import { tokenize } from "@/core/jieba";
 import { cosineSimilarity } from "@/utils/cosine-similarity";
-import { tfidf } from "@/utils/tf-idf";
+import { scoring } from "@/utils/scoring";
 
-/**
- * 查詢結果類型
- * @template T - 每個 DocItem 的 metadata
- */
-export type QueryResult<T = unknown> = {
-  isIndexReady: boolean;
-  /** 最匹配的文件，如果沒有超過 threshold，則為 undefined */
-  bestMatch: DocItem<T> | undefined;
-  /** 其他建議的候選文件（可能為空陣列） */
-  candidates: ReadonlyArray<DocItem<T>>;
-};
-
-/**
- * 查詢與輸入文字最相似的文件
- *
- * @template T - 每個 DocItem 的 metadata
- *
- * @param docItems - 原始文件列表，每個文件包含 key 與 content
- * @param documentFrequency - 文檔頻率表，用於計算 IDF
- * @param docItemsTokens - 每個文檔的斷詞結果，長度需與 docItems 對應
- * @param docItemsVectors - 可選，預先計算好的每個文檔的 TF-IDF 向量
- * @param input - 使用者輸入文字
- * @param topKCandidates - 返回的候選文件數量（不包含 bestMatch），預設 3
- * @param threshold - 分數閾值，超過才算 bestMatch，否則 bestMatch 為 undefined，預設 0.3
- *
- * @returns 一個物件，包含：
- * - `bestMatch`：最匹配的文檔（可能為 undefined）
- * - `candidates`：其他建議的候選文件，長度最多為 topKCandidates
- */
-export function query<T>({
-  docItems,
-  documentFrequency,
-  docItemsTokens,
-  docItemsVectors,
-  input,
-  topKCandidates = 3,
-  threshold = 0.3,
-}: {
-  docItems: ReadonlyArray<DocItem<T>>;
-  documentFrequency: DocumentFrequency;
-  docItemsTokens: DocItemsTokens;
-  docItemsVectors: DocItemsVectors;
-  input: string;
+export interface QueryOptions {
   topKCandidates?: number;
   threshold?: number;
-}): QueryResult<T> {
+}
+
+/**
+ * Search documents and return the most relevant matches.
+ */
+export function query<T>(
+  documents: ReadonlyArray<Document<T>>,
+  index: SearchIndex,
+  input: string,
+  { topKCandidates = 3, threshold = 0.3 }: QueryOptions,
+): QueryResult<T> {
   if (threshold < 0 || threshold > 1) {
-    throw new Error(`threshold 必須介於 0~1 之間，目前值為 ${threshold}`);
+    throw new Error(`threshold must be between 0 and 1, got ${threshold}`);
   }
 
-  const inputTokens = tokenize(input); // 斷詞處理
-  const inputVector = tfidf(inputTokens, docItems.length, documentFrequency); // 計算輸入文字的 TF-IDF 向量
+  if (documents.length === 0) {
+    return {
+      isIndexReady: false,
+      bestMatch: undefined,
+      candidates: [],
+    };
+  }
 
-  // 計算每個 docItem 與輸入文字的相似度
-  const scoredItems = docItemsTokens.map((_, index) => {
-    const score = cosineSimilarity(inputVector, docItemsVectors[index]);
-    return { index, score };
+  const { documentFrequency, documentVectors, avgDocLength } = index;
+
+  // Build lookup table once
+  const documentMap = new Map(documents.map((doc) => [doc.id, doc]));
+
+  // 1. Tokenize query
+  const queryTokens = tokenize(input);
+
+  // 2. Build query vector
+  const queryVector = scoring(queryTokens, {
+    totalDocs: documents.length,
+    documentFrequency,
+    avgDocLength,
   });
 
-  const sorted = [...scoredItems].sort((a, b) => b.score - a.score); // 依分數由高到低排序
-  const bestScore = sorted[0].score;
+  // 3. Score documents by id
+  const scored = [...documentVectors.entries()]
+    .map(([id, vector]) => {
+      const document = documentMap.get(id);
+      if (!document) return null;
+      return {
+        ...document,
+        score: cosineSimilarity(queryVector, vector),
+      };
+    })
+    .filter(Boolean) as ScoredDocument<T>[];
 
-  // Util: get valid candidates
-  const getCandidates = (start: number) =>
-    sorted
-      .slice(start, start + topKCandidates)
-      .map((s) => docItems[s.index])
-      .filter(Boolean);
+  // 4. Rank
+  const ranked = scored.sort((a, b) => b.score - a.score);
+  const bestScore = ranked[0]?.score ?? 0;
+
+  const pick = (start: number) => ranked.slice(start, start + topKCandidates);
 
   if (bestScore > threshold) {
-    // 超過閾值，第一筆為 bestMatch，其餘 topK 作為 candidates
-    const candidates = getCandidates(1);
     return {
       isIndexReady: true,
-      bestMatch: docItems[sorted[0].index],
-      candidates,
-    };
-  } else {
-    // 未超過閾值，bestMatch 為 undefined，回傳前 topK candidates
-    const candidates = getCandidates(0);
-    return {
-      isIndexReady: true,
-      bestMatch: undefined,
-      candidates,
+      bestMatch: ranked[0],
+      candidates: pick(1),
     };
   }
+
+  return {
+    isIndexReady: true,
+    bestMatch: undefined,
+    candidates: pick(0),
+  };
 }

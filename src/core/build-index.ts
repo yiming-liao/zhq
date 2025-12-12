@@ -1,40 +1,45 @@
-import type {
-  DocItem,
-  DocItemsTokens,
-  DocItemsVectors,
-  DocumentFrequency,
-} from "@/types";
+import type { Document, DocumentFrequency, SearchIndex } from "@/types";
 import { tokenize } from "@/core/jieba";
-import { tfidf } from "@/utils/tf-idf";
+import { scoring } from "@/utils/scoring";
 
 /**
- * 建立 TF-IDF 索引
- *
- * @param docItems - 文件列表，每個文件需包含 `key` 與 `content`。
- * @returns 一個物件，包含：
- *   - `documentFrequency`：`Record<string, number>`，詞與其文檔頻率對應表。
- *   - `docItemsTokens`：`string[][]`，每個文件的斷詞結果。
- *   - `docItemsVectors`：`Map<string, number>[]`，每個文件的 TF-IDF 向量（若 `precomputeVectors=true`）。
+ * Build search index (BM25-based).
  */
-export function buildIndex<T>(docItems: ReadonlyArray<DocItem<T>>): {
-  documentFrequency: DocumentFrequency;
-  docItemsTokens: DocItemsTokens;
-  docItemsVectors?: DocItemsVectors;
-} {
+export function buildIndex<T>(
+  documents: ReadonlyArray<Document<T>>,
+): SearchIndex {
   const documentFrequency: DocumentFrequency = {};
+  let totalTokens = 0;
 
-  const docItemsTokens = docItems.map(({ key }) => {
-    const tokens = tokenize(key); // 斷詞
-    const uniqueTokens = new Set(tokens); // 去重複
-    uniqueTokens.forEach((t) => {
-      documentFrequency[t] = (documentFrequency[t] || 0) + 1;
-    });
-    return tokens;
+  // 1. Tokenize & compute document frequency
+  const tokenized = documents.map((doc) => {
+    const tokens = tokenize(doc.text);
+    totalTokens += tokens.length;
+
+    const uniqueTokens = new Set(tokens);
+    for (const term of uniqueTokens) {
+      documentFrequency[term] = (documentFrequency[term] || 0) + 1;
+    }
+    return { id: doc.id, tokens };
   });
 
-  const docItemsVectors = docItemsTokens.map((tokens) =>
-    tfidf(tokens, docItems.length, documentFrequency),
-  );
+  // 2. Corpus statistics
+  const avgDocLength =
+    documents.length > 0 ? totalTokens / documents.length : 0;
 
-  return { documentFrequency, docItemsTokens, docItemsVectors };
+  // 3. Build vectors (id-based)
+  const documentVectors = new Map<Document["id"], Map<string, number>>();
+
+  for (const { id, tokens } of tokenized) {
+    documentVectors.set(
+      id,
+      scoring(tokens, {
+        totalDocs: documents.length,
+        documentFrequency,
+        avgDocLength,
+      }),
+    );
+  }
+
+  return { documentFrequency, documentVectors, avgDocLength };
 }

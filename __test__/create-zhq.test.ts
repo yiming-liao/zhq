@@ -1,15 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable unicorn/no-useless-undefined */
+import type { Document } from "@/types";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import * as buildIndexCore from "@/core/build-index";
+import * as jiebaCore from "@/core/jieba";
 import { createZhq } from "@/create-zhq";
 import { ZHQ } from "@/zhq";
 
-const mockDocItems = [
-  { key: "A", content: "天氣很好" },
-  { key: "B", content: "散步很舒服" },
-];
-
-// ---- Mock modules ----
+// --------------------------------------------------
+// mocks
+// --------------------------------------------------
 vi.mock("@/core/jieba", () => ({
   initJieba: vi.fn().mockResolvedValue(undefined),
 }));
@@ -17,41 +16,40 @@ vi.mock("@/core/jieba", () => ({
 vi.mock("@/core/build-index", () => ({
   buildIndex: vi.fn().mockReturnValue({
     documentFrequency: {},
-    docItemsTokens: [],
-    docItemsVectors: [],
+    documentVectors: [],
+    avgDocLength: 0,
   }),
 }));
 
-vi.mock("@/zhq", () => {
-  return {
-    ZHQ: vi.fn().mockImplementation(function (this: any) {
-      this.initJieba = vi.fn().mockResolvedValue(undefined);
-      this.buildIndex = vi.fn();
-    }),
-  };
-});
+const mockDocuments: ReadonlyArray<Document<unknown>> = [
+  { id: "A", text: "天氣", content: "天氣很好" },
+  { id: "B", text: "散步", content: "散步很舒服" },
+];
 
+// --------------------------------------------------
+// tests
+// --------------------------------------------------
 describe("createZhq", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("should return a ZHQ instance even without docItems", async () => {
+  it("should return a ZHQ instance even without documents", async () => {
     const zhq = await createZhq();
     expect(zhq).toBeInstanceOf(ZHQ);
-    expect(zhq.initJieba).not.toHaveBeenCalled();
-    expect(zhq.buildIndex).not.toHaveBeenCalled();
+    expect(jiebaCore.initJieba).not.toHaveBeenCalled();
+    expect(buildIndexCore.buildIndex).not.toHaveBeenCalled();
   });
 
-  it("should initialize jieba and build index if docItems are provided", async () => {
-    const zhq = await createZhq(mockDocItems);
-    expect(zhq.initJieba).toHaveBeenCalledWith("/jieba_rs_wasm_bg.wasm");
-    expect(zhq.buildIndex).toHaveBeenCalled();
-    expect(zhq.buildIndex).toHaveBeenCalledWith(mockDocItems);
+  it("should initialize jieba and build index when documents are provided", async () => {
+    const zhq = await createZhq(mockDocuments);
+    expect(zhq).toBeInstanceOf(ZHQ);
+    expect(jiebaCore.initJieba).toHaveBeenCalledWith("/jieba_rs_wasm_bg.wasm");
+    expect(buildIndexCore.buildIndex).toHaveBeenCalledWith(mockDocuments);
   });
 
   it("should pass custom wasmPath to initJieba", async () => {
-    const zhq = await createZhq(mockDocItems, { wasmPath: "/custom.wasm" });
-    expect(zhq.initJieba).toHaveBeenCalledWith("/custom.wasm");
+    await createZhq(mockDocuments, { wasmPath: "/custom.wasm" });
+    expect(jiebaCore.initJieba).toHaveBeenCalledWith("/custom.wasm");
   });
 });

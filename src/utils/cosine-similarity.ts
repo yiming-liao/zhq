@@ -1,14 +1,11 @@
 /**
- * 計算兩個稀疏向量的餘弦相似度 (Cosine Similarity)
+ * Compute cosine similarity between two sparse vectors.
  *
- * 公式：cosθ = (A · B) / (||A|| * ||B||)
- * 其中：
- *  - A · B 是兩向量的內積 (dot product)
- *  - ||A||、||B|| 是向量的 L2 範數 (Euclidean norm)
+ * - Measures the angular similarity of two weighted term vectors.
+ * - Commonly used to compare document and query vectors.
  *
- * @param a 向量 A (稀疏向量)
- * @param b 向量 B (稀疏向量)
- * @returns 相似度值，範圍 0~1，越接近 1 表示越相似
+ * Formula:
+ *   cos(θ) = (A · B) / (||A|| * ||B||)
  */
 export function cosineSimilarity(
   a: Map<string, number>,

@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import type { DocItem } from "@/types";
+import type { DocumentInput } from "@/types";
 import { ZHQ } from "@/zhq";
 
 interface CreateZhqOptions {
@@ -8,18 +7,19 @@ interface CreateZhqOptions {
 
 /**
  * 創建 ZHQ 實例並初始化
- * - 若傳入 docItems，會自動初始化 Jieba 並建索引
- * - 可選預先計算每個文檔的 TF-IDF 向量
+ *
+ * - 若提供 documents，會自動初始化 Jieba 並建立搜尋索引。
+ * - 若未提供 documents，則回傳尚未初始化的 ZHQ，引擎可於之後手動初始化。
  */
 export async function createZhq<T = unknown>(
-  docItems?: ReadonlyArray<DocItem<T>>,
+  documents?: ReadonlyArray<DocumentInput<T>>,
   { wasmPath = "/jieba_rs_wasm_bg.wasm" }: CreateZhqOptions = {},
 ): Promise<ZHQ<T>> {
-  const zhq = new ZHQ<T>(docItems);
+  const zhq = new ZHQ<T>();
 
-  if (docItems) {
+  if (documents) {
     await zhq.initJieba(wasmPath);
-    zhq.buildIndex(docItems as any);
+    zhq.buildIndex(documents);
   }
 
   return zhq;

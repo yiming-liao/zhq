@@ -2,8 +2,8 @@
 
 <div align="center">
 
-基於 **TF-IDF** 與 **Jieba 斷詞** 的中文檢索引擎，  
-完全運行於客戶端，適用於 問答、搜尋、推薦、文本比對。
+基於 **BM25** 與 **Jieba 斷詞** 的中文檢索引擎，  
+完全運行於客戶端，適用於 問答、搜尋、內容推薦、文本比對。
 
 </div>
 
@@ -22,9 +22,9 @@
 
 #### [👉 線上 Demo：互動式問答 Chatbot ↗](https://zhq-js.github.io/)
 
-- [極簡 HTML 範例](https://github.com/yiming-liao/zhq/tree/main/examples/html) ( npm run examples:html )
+- [入門 HTML 範例](https://github.com/yiming-liao/zhq/tree/main/examples/html) ( npm run examples:html )
 
-- [極簡 React 範例](https://github.com/yiming-liao/zhq/tree/main/examples/react) ( npm run examples:react )
+- [入門 React 範例](https://github.com/yiming-liao/zhq/tree/main/examples/react) ( npm run examples:react )
 
 ## 安裝
 
@@ -39,35 +39,37 @@ pnpm add zhq
 
 ## 前置作業
 
+- **設置 Jieba WASM 檔案**
+
 安裝完成後，需要先在 `node_modules/zhq` 中找到 **Jieba WASM** 檔案：
 
 ```
 node_modules/zhq/jieba_rs_wasm_bg.wasm
 ```
 
-並將它放到可以被瀏覽器讀取的公開資料夾，例如：
-
-- Vite 的 public 資料夾
-- Next.js 的 public 資料夾
+將此 WASM 檔案複製到可以被瀏覽器讀取的公開資料夾，例如：Vite 的 public 資料夾, Next.js 的 public 資料夾, ...
 
 ```
 放置路徑範例：
 public/jieba_rs_wasm_bg.wasm
 ```
 
+> ZHQ 預設讀取路徑：`/jieba_rs_wasm_bg.wasm`
+
 ## 使用方式
 
 #### 1. 準備文檔
 
 ```ts
-// 以 FAQ 問答形式為例：
-const docItems: DocItem[] = [
+import type { Document } from "zhq";
+
+const documents: Document[] = [
   {
-    key: "ZHQ是什麼？", // key: 用來與使用者輸入做相似度比對
+    text: "ZHQ是什麼？", // text: 用來與使用者輸入做相似度比對
     content: "ZHQ是一個基於TF-IDF與Jieba斷詞的中文檢索引擎",
   },
   {
-    key: "ZHQ的功能？",
+    text: "ZHQ的功能？",
     content: "ZHQ適用於 問答、搜尋、推薦、文本比對。",
   },
 ];
@@ -77,24 +79,16 @@ const docItems: DocItem[] = [
 
 使用 `createZhq()` 來建立 ZHQ 實例
 
-- 如果在此函數傳入 `docItems`，ZHQ 會**自動載入 WASM** 以及**建立索引**。
+- 如果在此函數傳入 `documents`，ZHQ 會**自動載入 WASM** 以及**建立索引**。
 
 ```ts
 // 基本用法
-const zhq = await createZhq(docItems);
+const zhq = await createZhq(documents);
 
 // 自訂選項
-const zhq = await createZhq(docItems, {
+const zhq = await createZhq(documents, {
   wasmPath: "/path/to/jieba_rs_wasm_bg.wasm", // 預設為 "/jieba_rs_wasm_bg.wasm"
 });
-```
-
-- **Lazy Loading (可選):** 不傳入 `docItems`，並手動分階段載入：
-
-```ts
-const zhq = await createZhq();
-await zhq.initJieba(); // 載入 Jieba
-zhq.buildIndexAsync(docItems); // 背景建立索引（不阻塞主執行緒）
 ```
 
 #### 3. 查詢資料
@@ -112,11 +106,54 @@ const { bestMatch, candidates } = zhq.query(input, {
 });
 ```
 
-- **Lazy Loading (可選):** 如果使用了 `buildIndexAsync`，索引可能仍在建立，請使用 `queryAsync()`：
+## 進階用法
+
+### 一、 Lazy Loading
+
+**初始化 ZHQ：** 不傳入 `documents`，並手動分階段載入：
+
+```ts
+const zhq = await createZhq();
+await zhq.initJieba(); // 載入 Jieba
+zhq.buildIndexAsync(documents); // 背景建立索引（不阻塞主執行緒）
+```
+
+**查詢資料：** 如果使用了 `buildIndexAsync`，索引可能仍在建立，請使用 `queryAsync()`：
 
 ```ts
 // 非同步查詢，若索引未完成，會等待索引建立後再回傳結果
 const { bestMatch, candidates } = await zhq.queryAsync(input);
+```
+
+### 二、 Lifecycle Events
+
+當你需要在 UI 中掌握 ZHQ 的初始化與索引狀態時，可以透過 lifecycle events 來監聽內部流程。
+
+ZHQ 提供以下事件：
+
+- `onJiebaReady`：Jieba WASM 載入完成
+- `onIndexReady`：文件索引建立完成
+- `onError`：初始化或索引過程發生錯誤
+
+使用範例：
+
+```ts
+const zhq = await createZhq();
+
+zhq.onJiebaReady = () => {
+  console.log("Jieba 載入完成");
+};
+
+zhq.onIndexReady = () => {
+  console.log("索引建立完成");
+};
+
+zhq.onError = (err) => {
+  console.error("ZHQ 發生錯誤：", err);
+};
+
+await zhq.initJieba();
+zhq.buildIndexAsync(documents);
 ```
 
 ---
