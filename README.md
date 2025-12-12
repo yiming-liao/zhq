@@ -11,6 +11,7 @@
 
 [![NPM version](https://img.shields.io/npm/v/zhq?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/zhq)
 [![Bundle size](https://img.shields.io/bundlephobia/minzip/zhq?style=flat&colorA=000000&colorB=000000)](https://bundlephobia.com/package/zhq)
+[![Coverage Status](https://img.shields.io/coveralls/github/yiming-liao/zhq.svg?branch=main&style=flat&colorA=000000&colorB=000000)](https://coveralls.io/github/yiming-liao/zhq?branch=main)
 [![TypeScript](https://img.shields.io/badge/TypeScript-%E2%9C%94-blue?style=flat&colorA=000000&colorB=000000)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/npm/l/zhq?style=flat&colorA=000000&colorB=000000)](LICENSE)
 
