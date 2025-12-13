@@ -1,6 +1,6 @@
 {
   "name": "zhq",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "🔍 ZHQ 是一個基於 BM25 與 Jieba 斷詞 的中文檢索引擎，完全運行於客戶端，適用於 問答、搜尋、內容推薦、文本比對。",
   "author": "Yiming Liao",
   "license": "MIT",
