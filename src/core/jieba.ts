@@ -8,5 +8,7 @@ export async function initJieba(
 
 export function tokenize(text?: string): string[] {
   if (!text) return [];
-  return cut_for_search(text);
+  // normalize: make search case-insensitive for Latin characters
+  const normalized = text.toLowerCase();
+  return cut_for_search(normalized);
 }
