@@ -1,9 +1,10 @@
 /* eslint-disable unicorn/no-useless-undefined */
 import type { Document } from "@/types";
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
-import * as buildIndexCore from "@/core/build-index";
+import * as buildIndexCore from "@/core/build-index/build-index";
+import * as buildIndexAsyncCore from "@/core/build-index/build-index-async";
 import * as jiebaCore from "@/core/jieba";
-import * as queryCore from "@/core/query";
+import * as queryCore from "@/core/query/query";
 import { ZHQ } from "@/zhq";
 
 const mockDocuments = [
@@ -27,11 +28,15 @@ const mockIndex = vi.hoisted(() => ({
   avgDocLength: 1,
 }));
 
-vi.mock("@/core/build-index", () => ({
+vi.mock("@/core/build-index/build-index", () => ({
   buildIndex: vi.fn().mockReturnValue(mockIndex),
 }));
 
-vi.mock("@/core/query", () => ({
+vi.mock("@/core/build-index/build-index-async", () => ({
+  buildIndexAsync: vi.fn().mockResolvedValue(mockIndex),
+}));
+
+vi.mock("@/core/query/query", () => ({
   query: vi.fn().mockReturnValue({
     isIndexReady: true,
     bestMatch: { id: "A", text: "天氣", content: "天氣很好" },
@@ -163,21 +168,27 @@ describe("ZHQ", () => {
     const zhq = new ZHQ();
     const onIndexReady = vi.fn();
     zhq.onIndexReady = onIndexReady;
-
     await zhq.buildIndexAsync(mockDocuments);
-
-    expect(buildIndexCore.buildIndex).toHaveBeenCalled();
+    expect(buildIndexAsyncCore.buildIndexAsync).toHaveBeenCalledTimes(1);
+    expect(buildIndexAsyncCore.buildIndexAsync).toHaveBeenCalledWith(
+      mockDocuments,
+      { onProgress: zhq.onProgress },
+    );
     expect(onIndexReady).toHaveBeenCalledTimes(1);
     expect(zhq.documents).toEqual(mockDocuments);
   });
 
-  it("should reuse same promise when building index", () => {
+  it("should call onError when async buildIndex fails", async () => {
     const zhq = new ZHQ();
-
-    const p1 = zhq.buildIndexAsync(mockDocuments);
-    const p2 = zhq.buildIndexAsync(mockDocuments);
-
-    expect(p1).toBe(p2);
+    const onError = vi.fn();
+    zhq.onError = onError;
+    vi.mocked(buildIndexAsyncCore.buildIndexAsync).mockRejectedValueOnce(
+      new Error("async fail"),
+    );
+    await expect(zhq.buildIndexAsync(mockDocuments)).rejects.toThrow(
+      "async fail",
+    );
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 
   it("should throw if buildIndexAsync called without documents", () => {
@@ -188,19 +199,11 @@ describe("ZHQ", () => {
     );
   });
 
-  it("should call onError when async buildIndex fails", async () => {
+  it("should reuse the same promise when buildIndexAsync is already running", () => {
     const zhq = new ZHQ();
-    const onError = vi.fn();
-    zhq.onError = onError;
-
-    vi.mocked(buildIndexCore.buildIndex).mockRejectedValueOnce(
-      new Error("async fail"),
-    );
-
-    await expect(zhq.buildIndexAsync(mockDocuments)).rejects.toThrow(
-      "async fail",
-    );
-    expect(onError).toHaveBeenCalledTimes(1);
+    const p1 = zhq.buildIndexAsync(mockDocuments);
+    const p2 = zhq.buildIndexAsync(mockDocuments);
+    expect(p1).toBe(p2);
   });
 
   // --------------------------------------------------

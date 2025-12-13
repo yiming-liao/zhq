@@ -5,7 +5,7 @@ export default function App() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<string[]>([]);
 
-  const { query, ready } = useChatbot();
+  const { query, progress } = useChatbot();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -33,7 +33,11 @@ export default function App() {
     <>
       <form onSubmit={handleSubmit}>
         <h1>zhq 範例 Chatbot</h1>
-        <p id="status">{ready ? "初始化完成" : "系統初始化中..."}</p>
+        <p id="status">
+          {progress === 1
+            ? "初始化完成"
+            : "系統初始化中..." + (progress * 100).toFixed(2) + "%"}
+        </p>
         <div>
           <input value={input} onChange={(e) => setInput(e.target.value)} />
           <button>送出</button>

@@ -1,4 +1,4 @@
-import { normalizeText } from "@/core/utils/normalize-text";
+import { normalizeText } from "@/core/jieba/utils/normalize-text";
 import init, { cut_for_search } from "@/jieba-wasm/jieba_rs_wasm";
 
 export async function initJieba(

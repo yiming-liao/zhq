@@ -4,9 +4,9 @@ import type {
   QueryResult,
   SearchIndex,
 } from "@/types";
-import { buildIndex } from "@/core/build-index";
+import { buildIndex, buildIndexAsync } from "@/core/build-index";
 import { initJieba } from "@/core/jieba";
-import { query } from "@/core/query";
+import { query } from "@/core/query/query";
 import { safeRandomId } from "@/utils/safe-random-id";
 
 /**
@@ -22,6 +22,7 @@ export class ZHQ<T = unknown> {
   // Lifecycle events
   onJiebaReady?: () => void;
   onIndexReady?: () => void;
+  onProgress?: (progress: number) => void;
   onError?: (err: unknown) => void;
 
   /** 目前使用的文件集合 */
@@ -94,7 +95,9 @@ export class ZHQ<T = unknown> {
     this._buildingIndex = (async () => {
       try {
         const normalizedDocs = this.normalizeDocuments(documents);
-        const result = await buildIndex<T>(normalizedDocs);
+        const result = await buildIndexAsync<T>(normalizedDocs, {
+          onProgress: this.onProgress,
+        });
         this.applyIndexResult(normalizedDocs, result);
       } catch (error) {
         this.onError?.(error);

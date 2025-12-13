@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/no-useless-undefined */
 import type { Document } from "@/types";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import * as buildIndexCore from "@/core/build-index";
+import * as buildIndexCore from "@/core/build-index/build-index";
 import * as jiebaCore from "@/core/jieba";
 import { createZhq } from "@/create-zhq";
 import { ZHQ } from "@/zhq";
@@ -13,7 +13,7 @@ vi.mock("@/core/jieba", () => ({
   initJieba: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("@/core/build-index", () => ({
+vi.mock("@/core/build-index/build-index", () => ({
   buildIndex: vi.fn().mockReturnValue({
     documentFrequency: {},
     documentVectors: [],

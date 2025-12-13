@@ -30,14 +30,14 @@ const DOCUMENTS: Document[] = [
 
 export function useChatbot(documents = DOCUMENTS) {
   const zhqRef = useRef<ZHQ>(null);
-  const [ready, setReady] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   // --- 初始化 ZHQ（Lazy Load）
   useEffect(() => {
     (async () => {
       const zhq = await createZhq();
       zhqRef.current = zhq; // 儲存到 ref
-      zhq.onIndexReady = () => setReady(true); // 使用內建的 callback 來更新狀態
+      zhq.onProgress = (p) => setProgress(p); // 使用內建的 callback 來更新狀態
       await zhq.initJieba(); // 初始化 Jieba
       zhq.buildIndexAsync(documents as Document[]); // 使用 buildIndexAsync，且不 Await，讓他背景執行
     })();
@@ -52,5 +52,5 @@ export function useChatbot(documents = DOCUMENTS) {
     });
   }
 
-  return { query, ready };
+  return { query, progress };
 }

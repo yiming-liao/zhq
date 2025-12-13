@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { tokenizeForSearch } from "@/core/utils/tokenize-for-search";
+import { tokenizeForSearch } from "@/core/query/utils/tokenize-for-search";
 
 vi.mock("@/core/jieba", () => ({
   tokenize: (text?: string) => {

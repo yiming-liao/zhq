@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeText } from "@/core/utils/normalize-text";
+import { normalizeText } from "@/core/jieba/utils/normalize-text";
 
 describe("normalizeText", () => {
   it("lowercases latin characters", () => {

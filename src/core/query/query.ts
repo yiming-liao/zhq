@@ -5,7 +5,7 @@ import type {
   ScoredDocument,
   SearchIndex,
 } from "@/types";
-import { tokenizeForSearch } from "@/core/utils/tokenize-for-search";
+import { tokenizeForSearch } from "@/core/query/utils/tokenize-for-search";
 import { cosineSimilarity } from "@/utils/cosine-similarity";
 import { scoring } from "@/utils/scoring";
 

@@ -1,11 +1,11 @@
 import type { Document, SearchIndex } from "@/types";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { query } from "@/core/query";
+import { query } from "@/core/query/query";
 
 // --------------------------------------------------
 // mocks
 // --------------------------------------------------
-vi.mock("@/core/utils/tokenize-for-search", () => ({
+vi.mock("@/core/query/utils/tokenize-for-search", () => ({
   tokenizeForSearch: (text?: string) => {
     if (!text) return [];
     return text.split(" ");
