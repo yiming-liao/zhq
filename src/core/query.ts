@@ -5,7 +5,7 @@ import type {
   ScoredDocument,
   SearchIndex,
 } from "@/types";
-import { tokenize } from "@/core/jieba";
+import { tokenizeForSearch } from "@/core/utils/tokenize-for-search";
 import { cosineSimilarity } from "@/utils/cosine-similarity";
 import { scoring } from "@/utils/scoring";
 
@@ -41,7 +41,7 @@ export function query<T>(
   const documentMap = new Map(documents.map((doc) => [doc.id, doc]));
 
   // 1. Tokenize query
-  const queryTokens = tokenize(input);
+  const queryTokens = tokenizeForSearch(input);
 
   // 2. Build query vector
   const queryVector = scoring(queryTokens, {

@@ -5,8 +5,11 @@ import { query } from "@/core/query";
 // --------------------------------------------------
 // mocks
 // --------------------------------------------------
-vi.mock("@/core/jieba", () => ({
-  tokenize: (text: string) => text.split(" "),
+vi.mock("@/core/utils/tokenize-for-search", () => ({
+  tokenizeForSearch: (text?: string) => {
+    if (!text) return [];
+    return text.split(" ");
+  },
 }));
 
 vi.mock("@/utils/scoring", () => ({
@@ -38,13 +41,7 @@ describe("query (id-based search with score)", () => {
     ];
 
     index = {
-      documentFrequency: {
-        搜尋: 2,
-        引擎: 1,
-        前端: 1,
-        BM25: 1,
-        文件: 1,
-      },
+      documentFrequency: { 搜尋: 2, 引擎: 1, 前端: 1, BM25: 1, 文件: 1 },
       documentVectors: new Map([
         [
           "1",
@@ -84,10 +81,7 @@ describe("query (id-based search with score)", () => {
   });
 
   it("should return bestMatch with score when score exceeds threshold", () => {
-    const res = query(documents, index, "搜尋", {
-      threshold: 0.1,
-    });
-
+    const res = query(documents, index, "搜尋", { threshold: 0.1 });
     expect(res.isIndexReady).toBe(true);
     expect(res.bestMatch).toBeDefined();
     expect(res.bestMatch!.id).toBe("1");
@@ -99,38 +93,26 @@ describe("query (id-based search with score)", () => {
       topKCandidates: 2,
       threshold: 0.1,
     });
-
     expect(res.bestMatch!.id).toBe("1");
     expect(res.candidates.length).toBeLessThanOrEqual(2);
-
-    // bestMatch should not appear in candidates
     expect(res.candidates.some((d) => d.id === "1")).toBe(false);
-
-    // candidates should all have score
     res.candidates.forEach((d) => {
       expect(d.score).toBeGreaterThanOrEqual(0);
     });
   });
 
   it("should return only candidates when bestScore is below threshold", () => {
-    const res = query(documents, index, "不存在", {
-      threshold: 0.9,
-    });
-
+    const res = query(documents, index, "不存在", { threshold: 0.9 });
     expect(res.isIndexReady).toBe(true);
     expect(res.bestMatch).toBeUndefined();
     expect(res.candidates.length).toBeGreaterThan(0);
-
     res.candidates.forEach((d) => {
       expect(d.score).toBeGreaterThanOrEqual(0);
     });
   });
 
   it("should resolve documents strictly by id from index", () => {
-    const res = query(documents, index, "BM25", {
-      threshold: 0.1,
-    });
-
+    const res = query(documents, index, "BM25", { threshold: 0.1 });
     expect(res.bestMatch).toBeDefined();
     expect(res.bestMatch!.id).toBe("3");
     expect(res.bestMatch!.content).toBe("doc 3");
@@ -145,11 +127,7 @@ describe("query (id-based search with score)", () => {
         ["missing", new Map([["搜尋", 1]])],
       ]),
     };
-
-    const res = query(documents, brokenIndex, "搜尋", {
-      threshold: 0.1,
-    });
-
+    const res = query(documents, brokenIndex, "搜尋", { threshold: 0.1 });
     expect(res.bestMatch).toBeDefined();
     expect(res.bestMatch!.id).not.toBe("missing");
   });
@@ -160,11 +138,8 @@ describe("query (id-based search with score)", () => {
       documentVectors: new Map(),
       avgDocLength: 0,
     };
-
     const documents: Document[] = [{ id: "1", text: "搜尋", content: "doc" }];
-
     const res = query(documents, emptyIndex, "搜尋", { threshold: 0.1 });
-
     expect(res.isIndexReady).toBe(true);
     expect(res.bestMatch).toBeUndefined();
     expect(res.candidates.length).toBe(0);
