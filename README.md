@@ -19,13 +19,20 @@
 
 > 瀏覽器搞定一切，放過你的伺服器。
 
+---
+
 ## 範例展示
 
-#### [👉 線上 Demo：互動式問答 Chatbot ↗](https://zhq-js.github.io/)
+<div align="center">
+
+#### [![🌐 線上 Demo：互動式問答 Chatbot ↗](https://img.shields.io/badge/👉%20%E7%B7%9A%E4%B8%8A%20Demo%EF%BC%9A%E4%BA%92%E5%8B%95%E5%BC%8F%E5%95%8F%E7%AD%94%20Chatbot%20🌐-3e668c?style=for-the-badge)](https://zhq-js.github.io/)
+
+</div>
 
 - [入門 HTML 範例](https://github.com/yiming-liao/zhq/tree/main/examples/html) ( npm run examples:html )
-
 - [入門 React 範例](https://github.com/yiming-liao/zhq/tree/main/examples/react) ( npm run examples:react )
+
+---
 
 ## 安裝
 
@@ -37,6 +44,8 @@ yarn add zhq
 # pnpm
 pnpm add zhq
 ```
+
+---
 
 ## 前置作業
 
@@ -56,6 +65,8 @@ public/jieba_rs_wasm_bg.wasm
 ```
 
 > ZHQ 預設讀取路徑：`/jieba_rs_wasm_bg.wasm`
+
+---
 
 ## 使用方式
 
@@ -106,6 +117,8 @@ const { bestMatch, candidates } = zhq.query(input, {
   threshold: 0.6, // 相似度閾值 (0~1)，預設為 0.3
 });
 ```
+
+---
 
 ## 進階用法
 
