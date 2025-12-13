@@ -147,6 +147,7 @@ ZHQ 提供以下事件：
 
 - `onJiebaReady`：Jieba WASM 載入完成
 - `onIndexReady`：文件索引建立完成
+- `onProgress`：索引建立進度更新（0 ~ 1）
 - `onError`：初始化或索引過程發生錯誤
 
 使用範例：
@@ -160,6 +161,10 @@ zhq.onJiebaReady = () => {
 
 zhq.onIndexReady = () => {
   console.log("索引建立完成");
+};
+
+zhq.onProgress = (progress) => {
+  console.log(`索引進度：${Math.round(progress * 100)}%`);
 };
 
 zhq.onError = (err) => {
