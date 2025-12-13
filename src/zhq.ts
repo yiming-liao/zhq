@@ -7,6 +7,7 @@ import type {
 import { buildIndex } from "@/core/build-index";
 import { initJieba } from "@/core/jieba";
 import { query } from "@/core/query";
+import { safeRandomId } from "@/utils/safe-random-id";
 
 /**
  * ZHQ 是一個純前端中文全文搜尋引擎，支援預先建索引並在瀏覽器中即時查詢。
@@ -33,7 +34,7 @@ export class ZHQ<T = unknown> {
   ): ReadonlyArray<Document<T>> {
     return documents.map((doc) => ({
       ...doc,
-      id: doc.id ?? crypto.randomUUID(),
+      id: doc.id ?? safeRandomId(),
     }));
   }
 

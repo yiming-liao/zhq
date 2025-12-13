@@ -39,6 +39,18 @@ vi.mock("@/core/query", () => ({
   }),
 }));
 
+function mockCryptoRandomUUID() {
+  const randomUUID = vi
+    .fn()
+    .mockReturnValueOnce("mock-uuid-1")
+    .mockReturnValueOnce("mock-uuid-2");
+  Object.defineProperty(globalThis, "crypto", {
+    value: { randomUUID },
+    configurable: true,
+  });
+  return randomUUID;
+}
+
 // --------------------------------------------------
 // tests
 // --------------------------------------------------
@@ -126,20 +138,22 @@ describe("ZHQ", () => {
     expect(onError).toHaveBeenCalledTimes(1);
   });
 
-  it("should generate id using crypto.randomUUID when document id is missing", () => {
+  it("should generate ids using crypto.randomUUID when document id is missing", () => {
+    const randomUUID = mockCryptoRandomUUID();
     const zhq = new ZHQ();
     const docsWithoutId = [
       { text: "天氣", content: "天氣很好" },
       { text: "散步", content: "適合散步" },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ] as any;
+    ];
     zhq.buildIndex(docsWithoutId);
     const docs = zhq.documents!;
     expect(docs).toHaveLength(2);
     for (const doc of docs) {
-      expect(doc.id).toBe("mock-uuid");
+      expect(typeof doc.id).toBe("string");
+      expect(doc.id).toBeTruthy();
     }
-    expect(crypto.randomUUID).toHaveBeenCalledTimes(2);
+    expect(randomUUID).toHaveBeenCalledTimes(2);
+    expect(docs[0].id).not.toBe(docs[1].id);
   });
 
   // --------------------------------------------------
