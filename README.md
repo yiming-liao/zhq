@@ -29,8 +29,15 @@
 
 </div>
 
+###
+
+<sub>
+
 - [入門 HTML 範例](https://github.com/yiming-liao/zhq/tree/main/examples/html) ( npm run examples:html )
+
 - [入門 React 範例](https://github.com/yiming-liao/zhq/tree/main/examples/react) ( npm run examples:react )
+
+</sub>
 
 ---
 
@@ -39,68 +46,45 @@
 ```bash
 # npm
 npm install zhq
+
 # yarn
 yarn add zhq
+
 # pnpm
 pnpm add zhq
 ```
 
----
+或直接使用 CDN 載入（ESM）：
 
-## 前置作業
-
-- **設置 Jieba WASM 檔案**
-
-安裝完成後，需要先在 `node_modules/zhq` 中找到 **Jieba WASM** 檔案：
-
+```js
+import { createZhq } from "https://cdn.jsdelivr.net/npm/zhq/+esm";
 ```
-node_modules/zhq/jieba_rs_wasm_bg.wasm
-```
-
-將此 WASM 檔案複製到可以被瀏覽器讀取的公開資料夾，例如：Vite 的 public 資料夾, Next.js 的 public 資料夾, ...
-
-```
-放置路徑範例：
-public/jieba_rs_wasm_bg.wasm
-```
-
-> ZHQ 預設讀取路徑：`/jieba_rs_wasm_bg.wasm`
 
 ---
 
-## 使用方式
+## 快速開始
 
 #### 1. 準備文檔
+
+準備一組用來建立搜尋索引的資料，後續查詢會基於這些內容進行比對。
 
 ```ts
 import type { Document } from "zhq";
 
 const documents: Document[] = [
   {
-    text: "ZHQ是什麼？", // text: 用來與使用者輸入做相似度比對
-    content: "ZHQ是一個基於TF-IDF與Jieba斷詞的中文檢索引擎",
-  },
-  {
-    text: "ZHQ的功能？",
-    content: "ZHQ適用於 問答、搜尋、推薦、文本比對。",
+    text: "ZHQ是什麼？", // text: 與使用者輸入做相似度比對
+    content: "ZHQ是一個基於TF-IDF與Jieba斷詞的中文檢索引擎", // content: 匹配成功時回傳給使用者的內容
   },
 ];
 ```
 
 #### 2. 初始化 ZHQ
 
-使用 `createZhq()` 來建立 ZHQ 實例
-
-- 如果在此函數傳入 `documents`，ZHQ 會**自動載入 WASM** 以及**建立索引**。
+將 `documents` 傳入 `createZhq()` 來建立 ZHQ 實例、自動載入 WASM 並建立好索引。
 
 ```ts
-// 基本用法
 const zhq = await createZhq(documents);
-
-// 自訂選項
-const zhq = await createZhq(documents, {
-  wasmPath: "/path/to/jieba_rs_wasm_bg.wasm", // 預設為 "/jieba_rs_wasm_bg.wasm"
-});
 ```
 
 #### 3. 查詢資料
@@ -108,13 +92,39 @@ const zhq = await createZhq(documents, {
 使用 `query()`，將 `input` 與文檔索引比對，找出最相似的文檔。
 
 ```ts
-// 基本用法
-const { bestMatch, candidates } = zhq.query(input);
+const input = "ZHQ是？";
 
-// 自訂選項
+const { bestMatch, candidates } = zhq.query(input);
+// bestMatch ➔ {
+//     "text": "ZHQ是什麼？",
+//     "content": "ZHQ是一個基於TF-IDF與Jieba斷詞的中文檢索引擎",
+//     "score": 0.8660254037844385,
+//     ...
+//  }
+```
+
+> <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Activities/Party%20Popper.png" alt="Party Popper" width="20" height="20" /> _恭喜！你已經完成 ZHQ 的基本使用流程！_
+
+### 自訂選項
+
+#### › createZhq
+
+您可以自訂 `wasmURL`，適用於 **本地託管 WASM 檔案**，詳見 [進階用法 ⤵︎](#一-本地託管-wasm-檔案)
+
+```ts
+const zhq = await createZhq(documents, {
+  wasmURL: "/path/to/jieba_rs_wasm_bg.wasm", // 預設為 "https://cdn.jsdelivr.net/npm/zhq/jieba_rs_wasm_bg.wasm"
+});
+```
+
+#### › zhq.query
+
+您可以在查詢時調整相似度門檻與回傳候選數量。
+
+```ts
 const { bestMatch, candidates } = zhq.query(input, {
-  topKCandidates: 2, // 指定回傳最接近的 candidates 數量，預設為 3
   threshold: 0.6, // 相似度閾值 (0~1)，預設為 0.3
+  topKCandidates: 2, // 指定回傳最接近的 candidates 數量，預設為 3
 });
 ```
 
@@ -122,24 +132,44 @@ const { bestMatch, candidates } = zhq.query(input, {
 
 ## 進階用法
 
-### 一、 Lazy Loading
+### 一、 本地託管 WASM 檔案
 
-**初始化 ZHQ：** 不傳入 `documents`，並手動分階段載入：
+在套件安裝後，可於 `node_modules` 中找到 **Jieba WASM** 檔案：
 
-```ts
-const zhq = await createZhq();
-await zhq.initJieba(); // 載入 Jieba
-zhq.buildIndexAsync(documents); // 背景建立索引（不阻塞主執行緒）
+```bash
+node_modules/zhq/jieba_rs_wasm_bg.wasm
 ```
 
-**查詢資料：** 如果使用了 `buildIndexAsync`，索引可能仍在建立，請使用 `queryAsync()`：
+將此 WASM 檔案複製到可以被瀏覽器讀取的公開資料夾，例如 **Vite** 或 **Next.js** 的 public 資料夾。
+
+```bash
+# 放置路徑範例：
+public/jieba_rs_wasm_bg.wasm
+```
+
+### 二、 Lazy Loading
+
+初始化 ZHQ：不傳入 `documents`，並手動分階段載入：
+
+```ts
+// (1) 注意：此處請不要傳入 documents，否則 ZHQ 會自動同步初始化
+const zhq = await createZhq();
+
+// (2) 手動載入 Jieba WASM
+await zhq.initJieba();
+
+// (3) 非同步建立索引 （此範例不使用 await，讓索引於背景建立）
+zhq.buildIndexAsync(documents);
+```
+
+查詢資料：如果使用了 `buildIndexAsync`，索引可能仍在建立，請使用 `queryAsync()`：
 
 ```ts
 // 非同步查詢，若索引未完成，會等待索引建立後再回傳結果
 const { bestMatch, candidates } = await zhq.queryAsync(input);
 ```
 
-### 二、 Lifecycle Events
+### 三、 Lifecycle Events
 
 當你需要在 UI 中掌握 ZHQ 的初始化與索引狀態時，可以透過 lifecycle events 來監聽內部流程。
 
@@ -171,8 +201,8 @@ zhq.onError = (err) => {
   console.error("ZHQ 發生錯誤：", err);
 };
 
-await zhq.initJieba();
-zhq.buildIndexAsync(documents);
+// await zhq.initJieba();
+// zhq.buildIndexAsync(documents);
 ```
 
 ---
