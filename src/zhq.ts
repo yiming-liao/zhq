@@ -4,6 +4,7 @@ import type {
   QueryResult,
   SearchIndex,
 } from "@/types";
+import { WASM_CDN_URL } from "@/constants";
 import { buildIndex, buildIndexAsync } from "@/core/build-index";
 import { initJieba } from "@/core/jieba";
 import { query } from "@/core/query/query";
@@ -40,10 +41,10 @@ export class ZHQ<T = unknown> {
   }
 
   /** 初始化 Jieba */
-  async initJieba(wasmPath = "/jieba_rs_wasm_bg.wasm") {
+  async initJieba(wasmURL = WASM_CDN_URL) {
     if (this._jiebaReady) return;
     try {
-      await initJieba(wasmPath);
+      await initJieba(wasmURL);
       this._jiebaReady = true;
       this.onJiebaReady?.();
     } catch (error) {

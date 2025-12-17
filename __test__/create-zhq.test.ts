@@ -1,6 +1,7 @@
 /* eslint-disable unicorn/no-useless-undefined */
 import type { Document } from "@/types";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { WASM_CDN_URL } from "@/constants";
 import * as buildIndexCore from "@/core/build-index/build-index";
 import * as jiebaCore from "@/core/jieba";
 import { createZhq } from "@/create-zhq";
@@ -44,12 +45,12 @@ describe("createZhq", () => {
   it("should initialize jieba and build index when documents are provided", async () => {
     const zhq = await createZhq(mockDocuments);
     expect(zhq).toBeInstanceOf(ZHQ);
-    expect(jiebaCore.initJieba).toHaveBeenCalledWith("/jieba_rs_wasm_bg.wasm");
+    expect(jiebaCore.initJieba).toHaveBeenCalledWith(WASM_CDN_URL);
     expect(buildIndexCore.buildIndex).toHaveBeenCalledWith(mockDocuments);
   });
 
-  it("should pass custom wasmPath to initJieba", async () => {
-    await createZhq(mockDocuments, { wasmPath: "/custom.wasm" });
+  it("should pass custom wasmURL to initJieba", async () => {
+    await createZhq(mockDocuments, { wasmURL: "/custom.wasm" });
     expect(jiebaCore.initJieba).toHaveBeenCalledWith("/custom.wasm");
   });
 });

@@ -1,8 +1,13 @@
 import type { DocumentInput } from "@/types";
+import { WASM_CDN_URL } from "@/constants";
 import { ZHQ } from "@/zhq";
 
 interface CreateZhqOptions {
-  wasmPath?: string;
+  /**
+   * URL to the Jieba WASM file.
+   * - Can be a local path or a remote CDN URL.
+   */
+  wasmURL?: string;
 }
 
 /**
@@ -13,12 +18,12 @@ interface CreateZhqOptions {
  */
 export async function createZhq<T = unknown>(
   documents?: ReadonlyArray<DocumentInput<T>>,
-  { wasmPath = "/jieba_rs_wasm_bg.wasm" }: CreateZhqOptions = {},
+  { wasmURL = WASM_CDN_URL }: CreateZhqOptions = {},
 ): Promise<ZHQ<T>> {
   const zhq = new ZHQ<T>();
 
   if (documents) {
-    await zhq.initJieba(wasmPath);
+    await zhq.initJieba(wasmURL);
     zhq.buildIndex(documents);
   }
 
