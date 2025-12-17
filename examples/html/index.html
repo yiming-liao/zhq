@@ -18,7 +18,7 @@
     <div id="chat"></div>
 
     <script type="module">
-      import { createZhq } from "../../dist";
+      import { createZhq } from "https://cdn.jsdelivr.net/npm/zhq/+esm";
 
       // --- 自訂文檔
       const DOCUMENTS = [
@@ -64,8 +64,8 @@
 
         // --- 使用 zhq.query()，找出跟 input 最相似的文檔。
         const { bestMatch, candidates } = zhq.query(input, {
-          topKCandidates: 2, // 顯示幾個建議問題
           threshold: 0.5, // 觸發 bestMatch 的相似程度 (0~1)
+          topKCandidates: 2, // 顯示幾個建議問題
         });
 
         chatBox.innerHTML += `<p>你: ${input}</p>`;
