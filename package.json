@@ -3,7 +3,6 @@
   "version": "1.0.8",
   "description": "🔍 ZHQ 是一個基於 BM25 與 Jieba 斷詞 的中文檢索引擎，完全運行於客戶端，適用於 問答、搜尋、內容推薦、文本比對。",
   "author": "Yiming Liao",
-  "license": "MIT",
   "homepage": "https://github.com/yiming-liao/zhq#readme",
   "repository": {
     "type": "git",
@@ -11,6 +10,10 @@
   },
   "bugs": {
     "url": "https://github.com/yiming-liao/zhq/issues"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/yiming-liao"
   },
   "keywords": [
     "zhq",
@@ -23,13 +26,8 @@
     "nlp",
     "chinese-text"
   ],
+  "license": "MIT",
   "type": "module",
-  "files": [
-    "dist",
-    "jieba_rs_wasm_bg.wasm",
-    "README.md",
-    "LICENSE"
-  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -40,6 +38,16 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "jieba_rs_wasm_bg.wasm",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "scripts": {
     "type": "tsc --noEmit",
     "lint": "eslint",
@@ -50,10 +58,6 @@
     "prepublishOnly": "yarn build",
     "examples:html": "vite --config examples/html/vite.config.ts",
     "examples:react": "vite --config examples/react/vite.config.ts"
-  },
-  "sideEffects": false,
-  "engines": {
-    "node": ">=16.0.0"
   },
   "dependencies": {},
   "devDependencies": {
